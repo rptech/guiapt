@@ -26,7 +26,7 @@
 
         .container { background: var(--card-bg); padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; width: 100%; }
         
-        /* Seletores */
+        /* Seletores (Dia e Criança) */
         .selector-box { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; background: #eaf2f8; padding: 10px; border-radius: 6px; }
         .selector-row { display: flex; align-items: center; justify-content: space-between; }
         .selector-box label { font-weight: bold; font-size: 13px; color: var(--primary); width: 35%; }
@@ -36,6 +36,7 @@
         .card-registo { background: #fafbfc; border: 1px solid #e1e4e8; border-radius: 8px; padding: 12px; margin-bottom: 12px; text-align: center; }
         .card-registo h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; }
 
+        /* CAIXAS LADO A LADO ALTAS E GRANDES */
         .time-group-large { display: flex; gap: 10px; justify-content: space-between; margin-bottom: 10px; }
         .time-box-large { flex: 1; display: flex; flex-direction: column; }
         .time-box-large label { font-size: 11px; color: #555; margin-bottom: 4px; font-weight: bold; text-transform: uppercase; }
@@ -51,8 +52,8 @@
             font-weight: bold; 
         }
         
-        .col-entrada input { background-color: var(--entrada-bg); color: #9a7d0a; border-color: #f1c40f; }
-        .col-saida input { background-color: var(--saida-bg); color: #154360; border-color: #5499c7; }
+        .col-entrada input { background-color: var(--entrada-bg); color: #9a7d0a; border-color: #f1c40f;height: 40px; width: 100%; font-size: 26px; }
+        .col-saida input { background-color: var(--saida-bg); color: #154360; border-color: #5499c7; height: 40px; width: 100%; font-size: 26px;}
 
         .observacoes { margin-top: 10px; }
         .observacoes label { font-size: 12px; font-weight: bold; color: var(--primary); display: block; margin-bottom: 4px; text-align: left; }
@@ -79,7 +80,7 @@
         .hidden { display: none; }
 
         /* Loading Spinner */
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; font-weight: bold; color: var(--primary); font-size: 16px; flex-direction: column; gap: 10px; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: flex; justify-content: center; align-items: center; z-index: 9999; font-weight: bold; color: var(--primary); font-size: 16px; flex-direction: column; gap: 10px; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -97,11 +98,11 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <span>A sincronizar com o GitHub...</span>
+        <span id="loading-text">A ligar ao GitHub...</span>
     </div>
 
     <h2>Berçário 2026/2027</h2>
-    <div class="subtitle">Centro Infantil</div>
+    <div class="subtitle">Centro Infantil Montelongo</div>
 
     <!-- Abas -->
     <div class="tabs">
@@ -170,7 +171,7 @@
         
         <button class="btn-acao btn-pdf" onclick="gerarPDFTabela()">Descarregar / Guardar PDF</button>
         <a id="btnEnviarEmail" class="btn-acao btn-email" href="#" onclick="enviarEmail()">Enviar Resumo por Email</a>
-        <button class="btn-acao btn-config" onclick="configurarGitHub()">Configurar GitHub (Gist/Token)</button>
+        <button class="btn-acao btn-config" onclick="configurarGitHub()">Configurar GitHub (Token / Gist ID)</button>
         <button class="btn-acao btn-danger" onclick="limparHistorico()">Limpar Histórico</button>
     </div>
 
@@ -229,29 +230,27 @@
     <script>
         const nomesDias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"];
         let appData = {
-            criancas: ["Kiko", "Inês", "Íris", "Lara", "Leonardo", "Maria", "Martim", "Rodrigo", "Tomás", "Vasco"],
+            criancas: ["Niko", "Inês", "Íris", "Lara", "Leonardo", "Maria", "Martín", "Rodrigo", "Tomás", "Vasco"],
             dadosSemana: {}
         };
 
         function getGitHubConfig() {
             return {
-                token: localStorage.getItem('gh_token') || '',
-                gistId: localStorage.getItem('gh_gist_id') || ''
+                token: (localStorage.getItem('gh_token') || '').trim(),
+                gistId: (localStorage.getItem('gh_gist_id') || '').trim()
             };
         }
 
         function configurarGitHub() {
-            let tokenAtual = localStorage.getItem('gh_token') || '';
-            let gistIdAtual = localStorage.getItem('gh_gist_id') || '';
-
-            let t = prompt("Insira o seu Personal Access Token do GitHub (com permissão 'gist'):", tokenAtual);
+            let cfg = getGitHubConfig();
+            let t = prompt("Insira o seu Personal Access Token do GitHub (com permissão 'gist'):", cfg.token);
             if (t === null) return;
-            let g = prompt("Insira o ID do GitHub Gist (ou deixe em branco para criarmos um novo automaticamente):", gistIdAtual);
+            let g = prompt("Insira o ID do GitHub Gist (ou deixe em branco para criar um novo automaticamente):", cfg.gistId);
             if (g === null) return;
 
             localStorage.setItem('gh_token', t.trim());
             localStorage.setItem('gh_gist_id', g.trim());
-            alert("Configuração guardada! A sincronizar...");
+            alert("Configuração guardada! A testar ligação...");
             carregarDaCloud();
         }
 
@@ -259,23 +258,25 @@
             let cfg = getGitHubConfig();
             if (!cfg.token) {
                 document.getElementById("loading-overlay").style.display = "none";
-                // Se não tiver configurado, pede na hora
-                if(confirm("Para sincronizar os dados entre dispositivos no GitHub, precisa de configurar o seu Token do Gist. Deseja configurar agora?")) {
+                if(confirm("Token do GitHub não configurado. Deseja configurar agora para sincronizar os dados?")) {
                     configurarGitHub();
+                } else {
+                    inicializarAppLocal();
                 }
-                inicializarAppLocal();
                 return;
             }
 
+            document.getElementById("loading-text").innerText = "A descarregar dados do GitHub...";
             document.getElementById("loading-overlay").style.display = "flex";
 
             try {
+                // Se não tiver Gist ID, cria um novo automaticamente
                 if (!cfg.gistId) {
-                    // Criar um Gist novo automaticamente se não existir
-                    let resp = await fetch('https://api.github.com/gists', {
+                    let respCriar = await fetch('https://api.github.com/gists', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `token ${cfg.token}`,
+                            'Authorization': `Bearer ${cfg.token}`,
+                            'Accept': 'application/vnd.github+json',
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
@@ -284,19 +285,23 @@
                             files: { "bercario_data.json": { content: JSON.stringify(appData) } }
                         })
                     });
-                    let data = await resp.json();
-                    if (data.id) {
-                        cfg.gistId = data.id;
-                        localStorage.setItem('gh_gist_id', cfg.gistId);
-                    } else {
-                        throw new Error("Erro ao criar Gist. Verifique o token.");
-                    }
+                    
+                    if (!respCriar.ok) throw new Error("Falha ao criar Gist. Verifique se o token é válido e tem permissão 'gist'.");
+                    let dataCriar = await respCriar.json();
+                    cfg.gistId = dataCriar.id;
+                    localStorage.setItem('gh_gist_id', cfg.gistId);
+                    alert(`Gist criado com sucesso! ID: ${cfg.gistId}`);
                 }
 
-                // Ler Gist existente
+                // Ler o Gist existente
                 let respGet = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-                    headers: { 'Authorization': `token ${cfg.token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${cfg.token}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
                 });
+
+                if (!respGet.ok) throw new Error("Não foi possível ler o Gist. Verifique se o ID do Gist está correto.");
                 let gistData = await respGet.json();
                 
                 if (gistData.files && gistData.files["bercario_data.json"]) {
@@ -306,7 +311,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert("Erro ao ligar ao GitHub. A usar dados locais temporários.");
+                alert("Erro ao ligar ao GitHub: " + err.message);
             }
 
             document.getElementById("loading-overlay").style.display = "none";
@@ -316,16 +321,19 @@
         async function guardarNaCloud() {
             let cfg = getGitHubConfig();
             if (!cfg.token || !cfg.gistId) {
-                // Guarda localmente se não configurado
+                alert("Token do GitHub ou ID do Gist em falta! Configure nas definições da aba Histórico.");
                 return;
             }
 
+            document.getElementById("loading-text").innerText = "A guardar no GitHub...";
             document.getElementById("loading-overlay").style.display = "flex";
+
             try {
-                await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+                let resp = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
                     method: 'PATCH',
                     headers: {
-                        'Authorization': `token ${cfg.token}`,
+                        'Authorization': `Bearer ${cfg.token}`,
+                        'Accept': 'application/vnd.github+json',
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -336,11 +344,17 @@
                         }
                     })
                 });
+
+                if (!resp.ok) {
+                    let errData = await resp.json();
+                    throw new Error(errData.message || "Erro HTTP " + resp.status);
+                }
             } catch (err) {
                 console.error("Erro ao guardar na cloud:", err);
-                alert("Atenção: Não foi possível atualizar no GitHub. Verifique a ligação.");
+                alert("Erro ao gravar no GitHub: " + err.message);
+            } finally {
+                document.getElementById("loading-overlay").style.display = "none";
             }
-            document.getElementById("loading-overlay").style.display = "none";
         }
 
         function inicializarAppLocal() {
@@ -484,6 +498,7 @@
                 atualizarComboboxCriancas();
                 carregarGestaoCriancas();
                 carregarRegistoCrianca();
+                alert("Nome alterado e sincronizado!");
             }
         }
 
@@ -494,6 +509,7 @@
                 atualizarComboboxCriancas();
                 carregarGestaoCriancas();
                 carregarRegistoCrianca();
+                alert("Criança apagada e sincronizada!");
             }
         }
 
@@ -541,6 +557,7 @@
 
         function enviarEmail() {
             let corpoEmail = "CENTRO INFANTIL MONTELONGO - BERÇÁRIO 2026/2027\n\n";
+            appData.criancas.pop; // dummy
             appData.criancas.forEach((nome, cIdx) => {
                 let linha = nome.padEnd(10, ' ');
                 for (let dIdx = 0; dIdx < 5; dIdx++) {
