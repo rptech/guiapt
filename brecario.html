@@ -54,3 +54,459 @@
         
         .col-entrada input { background-color: var(--entrada-bg); color: #9a7d0a; border-color: #f1c40f;height: 40px; width: 100%; font-size: 26px; }
         .col-saida input { background-color: var(--saida-bg); color: #154360; border-color: #5499c7; height: 40px; width: 100%; font-size: 26px;}
+
+        .observacoes { margin-top: 10px; }
+        .observacoes label { font-size: 12px; font-weight: bold; color: var(--primary); display: block; margin-bottom: 4px; text-align: left; }
+        .observacoes textarea { width: 100%; height: 60px; border: 1px solid #ccc; border-radius: 4px; padding: 8px; resize: none; font-size: 13px; }
+        
+        .btn-acao { display: block; width: 100%; background: #27ae60; color: white; border: none; padding: 14px; font-size: 15px; border-radius: 6px; margin-top: 12px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none; }
+        .btn-acao:active { background: #1e8449; }
+        .btn-pdf { background: #e67e22; margin-top: 8px; }
+        .btn-email { background: #2980b9; margin-top: 8px; }
+        .btn-danger { background: #c0392b; margin-top: 8px; }
+
+        /* Gestão de Crianças */
+        .child-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; font-weight: bold; color: var(--primary); }
+        .child-actions button { padding: 6px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; margin-left: 4px; font-weight: bold; color: white; }
+        .btn-edit { background: #f39c12; }
+        .btn-del { background: #c0392b; }
+        .add-box { display: flex; gap: 6px; margin-bottom: 12px; }
+        .add-box input { flex: 1; padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Histórico */
+        .history-item { background: #f9f9f9; border-left: 4px solid var(--secondary); padding: 10px; margin-bottom: 8px; border-radius: 4px; font-size: 12px; line-height: 1.4; }
+        .history-item b { color: var(--primary); }
+        .hidden { display: none; }
+
+        /* ESTILO DA TABELA PDF OCULTA NO ECRÃ NORMAL */
+        #print-area { display: none; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; background: white; padding: 10px; }
+            @page { size: landscape; margin: 10mm; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Berçário 2026/2027</h2>
+    <div class="subtitle">Centro Infantil</div>
+
+    <!-- Abas -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="mudarTab('registo')">Registar</button>
+        <button class="tab-btn" onclick="mudarTab('criancas')">Crianças</button>
+        <button class="tab-btn" onclick="mudarTab('historico')">Histórico</button>
+    </div>
+
+    <!-- SECÇÃO REGISTO -->
+    <div id="tab-registo" class="container">
+        <div class="selector-box">
+            <div class="selector-row">
+                <label for="diaSelect">Dia:</label>
+                <select id="diaSelect" onchange="carregarRegistoCrianca()">
+                    <option value="0">Segunda-feira</option>
+                    <option value="1">Terça-feira</option>
+                    <option value="2">Quarta-feira</option>
+                    <option value="3">Quinta-feira</option>
+                    <option value="4">Sexta-feira</option>
+                </select>
+            </div>
+            <div class="selector-row" style="margin-top: 6px;">
+                <label for="criancaSelect">Criança:</label>
+                <select id="criancaSelect" onchange="carregarRegistoCrianca()"></select>
+            </div>
+        </div>
+
+        <div class="card-registo">
+            <h3 id="tituloCriancaSelecionada">Nome da Criança</h3>
+            <div class="time-group-large">
+                <div class="time-box-large col-entrada">
+                    <label>Entrada</label>
+                    <input type="tel" inputmode="numeric" id="inputEntrada" placeholder="--:--" maxlength="5" onblur="formatarEValidarHora(this)">
+                </div>
+                <div class="time-box-large col-saida">
+                    <label>Saída</label>
+                    <input type="tel" inputmode="numeric" id="inputSaida" placeholder="--:--" maxlength="5" onblur="formatarEValidarHora(this)">
+                </div>
+            </div>
+        </div>
+
+        <div class="observacoes">
+            <label>Observações do Dia:</label>
+            <textarea id="obs" placeholder="Notas do dia..."></textarea>
+        </div>
+
+        <button class="btn-acao" onclick="guardarRegistoAtual()">Guardar Registos</button>
+    </div>
+
+    <!-- SECÇÃO GESTÃO DE CRIANÇAS -->
+    <div id="tab-criancas" class="container hidden">
+        <h3 style="color: var(--primary); font-size: 14px; margin-top: 0; text-align: center;">Gerir Lista de Crianças</h3>
+        
+        <div class="add-box">
+            <input type="text" id="novoNomeCrianca" placeholder="Nome da nova criança...">
+            <button class="btn-acao" style="margin-top:0; width: auto; padding: 8px 14px;" onclick="adicionarCrianca()">Adicionar</button>
+        </div>
+
+        <div id="listaGestaoCriancas"></div>
+    </div>
+
+    <!-- SECÇÃO HISTÓRICO -->
+    <div id="tab-historico" class="container hidden">
+        <h3 style="color: var(--primary); font-size: 14px; margin-top: 0; text-align: center;">Registos Anteriores</h3>
+        <div id="lista-historico"></div>
+        
+        <button class="btn-acao btn-pdf" onclick="gerarPDFTabela()">Descarregar / Guardar PDF</button>
+        <a id="btnEnviarEmail" class="btn-acao btn-email" href="#" onclick="enviarEmail()">Enviar Resumo por Email</a>
+        <button class="btn-acao btn-danger" onclick="limparHistorico()">Limpar Histórico</button>
+    </div>
+
+    <!-- ÁREA DE IMPRESSÃO / PDF COM O DESIGN EXATO DA IMAGEM -->
+    <div id="print-area">
+        <div style="border: 2px solid #1a5276; border-radius: 6px; padding: 10px; font-family: Arial, sans-serif;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                <tr>
+                    <td style="width: 20%; border: 1px solid #1a5276; padding: 6px; text-align: center; background: #f4f6f9;">
+                        <b style="color: #1a5276; font-size: 12px;">CENTRO INFANTIL<br>MONTELONGO</b>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <h2 style="margin: 0; color: #1a5276; font-size: 20px;">Berçário 2026/2027</h2>
+                        <div style="font-size: 11px; color: #555; margin-top: 2px;">Registo semanal de entradas e saídas.</div>
+                        <div style="font-size: 11px; color: #333; margin-top: 4px;">Semana de _____ / _____ / ________ a _____ / _____ / ________</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table id="tabelaPdfCompleta" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11px;">
+                <thead>
+                    <tr style="background-color: #1a5276; color: white;">
+                        <th rowspan="2" style="border: 1px solid #1a5276; padding: 6px; width: 14%;">CRIANÇA</th>
+                        <th colspan="2" style="border: 1px solid #1a5276; padding: 4px;">SEGUNDA</th>
+                        <th colspan="2" style="border: 1px solid #1a5276; padding: 4px;">TERÇA</th>
+                        <th colspan="2" style="border: 1px solid #1a5276; padding: 4px;">QUARTA</th>
+                        <th colspan="2" style="border: 1px solid #1a5276; padding: 4px;">QUINTA</th>
+                        <th colspan="2" style="border: 1px solid #1a5276; padding: 4px;">SEXTA</th>
+                    </tr>
+                    <tr style="background-color: #2980b9; color: white; font-size: 10px;">
+                        <th style="border: 1px solid #1a5276; padding: 3px;">ENTRADA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">ENTRADA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">ENTRADA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">ENTRADA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">ENTRADA</th>
+                        <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaPdf">
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+
+            <div style="margin-top: 15px; border: 1px solid #bbb; padding: 8px; border-radius: 4px; font-size: 11px; min-height: 45px;">
+                <b>Observações:</b><br>
+                <span id="obsPdfTexto" style="color: #444; font-size: 10px;"></span>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; justify-content: flex-end; font-size: 11px;">
+                <span>Educadora: __________________________________________</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let criancas = JSON.parse(localStorage.getItem('bercario_lista_criancas') || JSON.stringify(["Niko", "Inês", "Íris", "Lara", "Leonardo", "Maria", "Martín", "Rodrigo", "Tomás", "Vasco"]));
+        const nomesDias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"];
+
+        function inicializarApp() {
+            atualizarComboboxCriancas();
+            carregarRegistoCrianca();
+            carregarGestaoCriancas();
+        }
+
+        function atualizarComboboxCriancas(selecionarIndex = 0) {
+            const select = document.getElementById("criancaSelect");
+            select.innerHTML = "";
+            criancas.forEach((nome, i) => {
+                let opt = document.createElement("option");
+                opt.value = i;
+                opt.text = nome;
+                select.appendChild(opt);
+            });
+            if (criancas.length > 0) {
+                select.selectedIndex = Math.min(selecionarIndex, criancas.length - 1);
+            }
+        }
+
+        function formatarEValidarHora(input) {
+            let val = input.value.trim();
+            if (!val) return;
+            val = val.replace(/\D/g, '');
+
+            if (val.length === 3) val = "0" + val;
+
+            if (val.length === 4) {
+                let horas = parseInt(val.substring(0, 2), 10);
+                let minutos = parseInt(val.substring(2, 4), 10);
+                if (horas > 23 || minutos > 59) {
+                    alert("Hora inválida! Insira um valor correto (ex: 0830 ou 1715).");
+                    input.value = "";
+                    return;
+                }
+                input.value = val.substring(0, 2) + ":" + val.substring(2, 4);
+                return;
+            }
+
+            if (input.value.includes(":")) {
+                let partes = input.value.split(":");
+                if (partes.length === 2) {
+                    let h = parseInt(partes[0], 10);
+                    let m = parseInt(partes[1], 10);
+                    if (isNaN(h) || isNaN(m) || h > 23 || m > 59) {
+                        alert("Hora inválida! Verifique os valores (máximo 23:59).");
+                        input.value = "";
+                        return;
+                    }
+                    input.value = (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
+                    return;
+                }
+            }
+
+            if (val.length > 0 && val.length < 4) {
+                alert("Use 4 dígitos (ex: 0930).");
+                input.value = "";
+            }
+        }
+
+        function carregarRegistoCrianca() {
+            let diaIndex = document.getElementById("diaSelect").value;
+            let criancaIndex = document.getElementById("criancaSelect").value;
+            
+            if (criancas.length === 0 || criancaIndex === "") return;
+
+            document.getElementById("tituloCriancaSelecionada").innerText = criancas[criancaIndex];
+
+            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
+            let dadosDia = dadosGerais[diaIndex] || { entradas: {}, saidas: {}, obs: "" };
+
+            document.getElementById("inputEntrada").value = dadosDia.entradas[criancaIndex] || "";
+            document.getElementById("inputSaida").value = dadosDia.saidas[criancaIndex] || "";
+            document.getElementById("obs").value = dadosDia.obs || "";
+        }
+
+        function guardarRegistoAtual() {
+            let eInput = document.getElementById("inputEntrada");
+            let sInput = document.getElementById("inputSaida");
+            if(eInput.value) formatarEValidarHora(eInput);
+            if(sInput.value) formatarEValidarHora(sInput);
+
+            let diaIndex = document.getElementById("diaSelect").value;
+            let criancaIndex = document.getElementById("criancaSelect").value;
+            
+            if (criancas.length === 0) return;
+
+            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
+            if (!dadosGerais[diaIndex]) {
+                dadosGerais[diaIndex] = { entradas: {}, saidas: {}, obs: "" };
+            }
+
+            dadosGerais[diaIndex].entradas[criancaIndex] = eInput.value;
+            dadosGerais[diaIndex].saidas[criancaIndex] = sInput.value;
+            dadosGerais[diaIndex].obs = document.getElementById("obs").value;
+
+            let nomeDia = nomesDias[diaIndex];
+            let resumoDia = `<b>${nomeDia}</b><br>`;
+            let temRegisto = false;
+
+            for (let i = 0; i < criancas.length; i++) {
+                let ent = dadosGerais[diaIndex].entradas[i];
+                let sai = dadosGerais[diaIndex].saidas[i];
+                if (ent || sai) {
+                    resumoDia += `- ${criancas[i]}: (Ent: ${ent || '--'} | Saí: ${sai || '--'})<br>`;
+                    temRegisto = true;
+                }
+            }
+            if (dadosGerais[diaIndex].obs) {
+                resumoDia += `Obs: ${dadosGerais[diaIndex].obs}<br>`;
+            }
+
+            if (temRegisto) {
+                dadosGerais[diaIndex].resumo = resumoDia;
+                dadosGerais[diaIndex].dataRegisto = new Date().toLocaleDateString();
+            } else {
+                delete dadosGerais[diaIndex];
+            }
+
+            localStorage.setItem('bercario_dados_semana', JSON.stringify(dadosGerais));
+            alert("Registo guardado com sucesso!");
+        }
+
+        /* Gestão de Crianças */
+        function carregarGestaoCriancas() {
+            let container = document.getElementById("listaGestaoCriancas");
+            container.innerHTML = "";
+            criancas.forEach((nome, i) => {
+                let div = document.createElement("div");
+                div.className = "child-item";
+                div.innerHTML = `
+                    <span>${nome}</span>
+                    <div class="child-actions">
+                        <button class="btn-edit" onclick="editarCrianca(${i})">Editar</button>
+                        <button class="btn-del" onclick="apagarCrianca(${i})">Apagar</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function adicionarCrianca() {
+            let input = document.getElementById("novoNomeCrianca");
+            let nome = input.value.trim();
+            if (!nome) {
+                alert("Insira um nome válido.");
+                return;
+            }
+            criancas.push(nome);
+            localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+            input.value = "";
+            atualizarComboboxCriancas();
+            carregarGestaoCriancas();
+            alert("Criança adicionada com sucesso!");
+        }
+
+        function editarCrianca(index) {
+            let novoNome = prompt("Editar nome da criança:", criancas[index]);
+            if (novoNome !== null && novoNome.trim() !== "") {
+                criancas[index] = novoNome.trim();
+                localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+                atualizarComboboxCriancas();
+                carregarGestaoCriancas();
+                carregarRegistoCrianca();
+            }
+        }
+
+        function apagarCrianca(index) {
+            if (confirm(`Deseja mesmo apagar ${criancas[index]}?`)) {
+                criancas.splice(index, 1);
+                localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+                atualizarComboboxCriancas();
+                carregarGestaoCriancas();
+                carregarRegistoCrianca();
+            }
+        }
+
+        /* Histórico, Visualização PDF e Email */
+        function atualizarHistoricoGeral() {
+            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
+            let historicoContainer = document.getElementById("lista-historico");
+            historicoContainer.innerHTML = "";
+            
+            let hHtml = "";
+            for (let d in dadosGerais) {
+                if (dadosGerais[d] && dadosGerais[d].resumo) {
+                    hHtml += `<div class="history-item">${dadosGerais[d].resumo} <small style="color:#7f8c8d"><br>Guardado a: ${dadosGerais[d].dataRegisto || ''}</small></div>`;
+                }
+            }
+            historicoContainer.innerHTML = hHtml || "Sem histórico guardado.";
+        }
+
+        function gerarPDFTabela() {
+            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
+            let tbody = document.getElementById("corpoTabelaPdf");
+            tbody.innerHTML = "";
+
+            criancas.forEach((nome, cIdx) => {
+                let tr = document.createElement("tr");
+                let htmlRow = `<td style="border: 1px solid #1a5276; padding: 6px; font-weight: bold; background: #fafbfc; text-align: left; padding-left: 8px;">${nome}</td>`;
+                
+                for (let dIdx = 0; dIdx < 5; dIdx++) {
+                    let diaObj = dadosGerais[dIdx];
+                    let ent = (diaObj && diaObj.entradas && diaObj.entradas[cIdx]) ? diaObj.entradas[cIdx] : "";
+                    let sai = (diaObj && diaObj.saidas && diaObj.saidas[cIdx]) ? diaObj.saidas[cIdx] : "";
+                    
+                    htmlRow += `<td style="border: 1px solid #bbb; padding: 6px; background-color: #fef9e7; font-weight: bold; color: #9a7d0a;">${ent}</td>`;
+                    htmlRow += `<td style="border: 1px solid #bbb; padding: 6px; background-color: #ebf5fb; font-weight: bold; color: #154360;">${sai}</td>`;
+                }
+                tr.innerHTML = htmlRow;
+                tbody.appendChild(tr);
+            });
+
+            // Compilar observações para o rodapé do PDF
+            let obsTexto = "";
+            nomesDias.forEach((nomeDia, dIdx) => {
+                if (dadosGerais[dIdx] && dadosGerais[dIdx].obs) {
+                    obsTexto += `<b>${nomeDia}:</b> ${dadosGerais[dIdx]} | `;
+                    obsTexto += `<b>${nomeDia}:</b> ${dadosGerais[dIdx].obs} &nbsp;&nbsp; `;
+                }
+            });
+            document.getElementById("obsPdfTexto").innerHTML = obsTexto || "Nenhuma observação registada para esta semana.";
+
+            // Disparar impressão / Gravar PDF do sistema
+            window.print();
+        }
+
+        function enviarEmail() {
+            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
+            let corpoEmail = "CENTRO INFANTIL MONTELONGO - BERÇÁRIO 2026/2027\n\n";
+            corpoEmail += "CRIANÇA   | SEG(Ent/Sai) | TER(Ent/Sai) | QUA(Ent/Sai) | QUI(Ent/Sai) | SEX(Ent/Sai)\n";
+            corpoEmail += "-----------------------------------------------------------------------------------\n";
+
+            criancas.forEach((nome, cIdx) => {
+                let linha = nome.padEnd(10, ' ');
+                for (let dIdx = 0; dIdx < 5; dIdx++) {
+                    let diaObj = dadosGerais[dIdx];
+                    let ent = (diaObj && diaObj.entradas && diaObj.entradas[cIdx]) ? diaObj.entradas[cIdx] : "--:--";
+                    let sai = (diaObj && diaObj.saidas && diaObj.saidas[cIdx]) ? diaObj.saidas[cIdx] : "--:--";
+                    linha += ` | ${ent}/${sai}`;
+                }
+                corpoEmail += linha + "\n";
+            });
+
+            corpoEmail += "-----------------------------------------------------------------------------------\n\nOBSERVAÇÕES:\n";
+            nomesDias.forEach((nomeDia, dIdx) => {
+                if (dadosGerais[dIdx] && dadosGerais[dIdx].obs) {
+                    corpoEmail += `- ${nomeDia}: ${dadosGerais[dIdx].obs}\n`;
+                }
+            });
+
+            let assunto = encodeURIComponent("Mapa Semanal de Entradas e Saídas - Berçário Montelongo");
+            let corpo = encodeURIComponent(corpoEmail);
+            window.location.href = `mailto:?subject=${assunto}&body=${corpo}`;
+        }
+
+        function mudarTab(tab) {
+            document.getElementById("tab-registo").classList.toggle("hidden", tab !== 'registo');
+            document.getElementById("tab-criancas").classList.toggle("hidden", tab !== 'criancas');
+            document.getElementById("tab-historico").classList.toggle("hidden", tab !== 'historico');
+            
+            let botoes = document.querySelectorAll(".tab-btn");
+            botoes[0].classList.toggle("active", tab === 'registo');
+            botoes[1].classList.toggle("active", tab === 'criancas');
+            botoes[2].classList.toggle("active", tab === 'historico');
+            
+            if(tab === 'historico') {
+                atualizarHistoricoGeral();
+            }
+            if(tab === 'criancas') {
+                carregarGestaoCriancas();
+            }
+        }
+
+        function limparHistorico() {
+            if(confirm("Deseja limpar todos os registos guardados?")) {
+                localStorage.removeItem('bercario_dados_semana');
+                atualizarHistoricoGeral();
+                carregarRegistoCrianca();
+                alert("Histórico limpo.");
+            }
+        }
+
+        window.onload = inicializarApp;
+    </script>
+</body>
+</html>
