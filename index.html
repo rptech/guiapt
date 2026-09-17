@@ -1,0 +1,142 @@
+html_content = """<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PontoCerto.pt — O dia a dia em Portugal simplificado</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="bg-indigo-600 text-white font-bold px-2.5 py-1 rounded-lg text-sm">PT</span>
+                <span class="font-bold text-lg text-slate-900 tracking-tight">PontoCerto<span class="text-indigo-600">.pt</span></span>
+            </div>
+            <span class="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Ferramenta de Utilidade Pública</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-12 flex-grow w-full">
+        
+        <!-- Hero Section -->
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mb-3">Tudo o que é essencial em Portugal, num só sítio.</h1>
+            <p class="text-slate-600 text-sm sm:text-base">Acesso rápido e direto aos portais públicos e serviços do dia a dia. Sem burocracia, sem fins lucrativos.</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="max-w-xl mx-auto mb-12">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <input type="text" id="searchInput" placeholder="Pesquisar serviço (ex: Finanças, SNS24, IRS, Combustíveis)..." class="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-300 rounded-xl text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+            </div>
+        </div>
+
+        <!-- Grid de Categorias / Links -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="servicesGrid">
+
+            <!-- Card: Estado & Finanças -->
+            <div class="service-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <h2 class="font-semibold text-slate-900 text-lg">Estado & Finanças</h2>
+                </div>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="https://www.portaldasfinancas.gov.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Portal das Finanças (IRS, E-Fatura)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://www.seg-social.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Segurança Social Direta</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://www.autenticacao.gov.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Chave Móvel Digital / ID.GOV</span> <span class="text-xs text-slate-400">→</span></a></li>
+                </ul>
+            </div>
+
+            <!-- Card: Saúde & Bem-estar -->
+            <div class="service-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                    </div>
+                    <h2 class="font-semibold text-slate-900 text-lg">Saúde & Bem-estar</h2>
+                </div>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="https://www.sns24.gov.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>SNS 24 (Consultas e Receitas)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://www.inem.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>INEM / Emergência Médica</span> <span class="text-xs text-slate-400">→</span></a></li>
+                </ul>
+            </div>
+
+            <!-- Card: Mobilidade & Transportes -->
+            <div class="service-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h2 class="font-semibold text-slate-900 text-lg">Mobilidade & Utilidades</h2>
+                </div>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="https://precoscombustiveis.dgeg.gov.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Preços de Combustíveis (DGEG)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://www.ipma.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>IPMA (Meteorologia e Avisos)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://www.cp.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Comboios de Portugal (CP)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                </ul>
+            </div>
+
+            <!-- Card: Emprego & Justiça -->
+            <div class="service-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    </div>
+                    <h2 class="font-semibold text-slate-900 text-lg">Emprego & Justiça</h2>
+                </div>
+                <ul class="space-y-2.5 text-sm">
+                    <li><a href="https://www.iefp.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>IEFP (Emprego e Formação)</span> <span class="text-xs text-slate-400">→</span></a></li>
+                    <li><a href="https://justica.gov.pt" target="_blank" class="flex justify-between items-center text-slate-600 hover:text-indigo-600 p-2 rounded-lg hover:bg-slate-50 transition-colors"><span>Portal da Justiça</span> <span class="text-xs text-slate-400">→</span></a></li>
+                </ul>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-16">
+        <div class="max-w-5xl mx-auto px-4 py-6 text-center text-xs text-slate-500">
+            <p class="mb-1">Este é um projeto independente, de utilidade pública e sem fins lucrativos.</p>
+            <p>Os links redirecionam diretamente para as fontes oficiais do Estado Português.</p>
+        </div>
+    </footer>
+
+    <!-- Script de Filtro Instantâneo -->
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const cards = document.querySelectorAll('.service-card');
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                if(text.includes(term)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+print("Ficheiro index.html criado com sucesso!")
