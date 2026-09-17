@@ -91,8 +91,13 @@
 </head>
 <body>
 
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <span id="loading-text">A ligar ao GitHub...</span>
+    </div>
+
     <h2>Berçário 2026/2027</h2>
-    <div class="subtitle">Centro Infantil</div>
+    <div class="subtitle">Centro Infantil Montelongo</div>
 
     <!-- Abas -->
     <div class="tabs">
@@ -161,10 +166,11 @@
         
         <button class="btn-acao btn-pdf" onclick="gerarPDFTabela()">Descarregar / Guardar PDF</button>
         <a id="btnEnviarEmail" class="btn-acao btn-email" href="#" onclick="enviarEmail()">Enviar Resumo por Email</a>
+        <button class="btn-acao btn-config" onclick="configurarGitHub()">Configurar GitHub (Token / Gist ID)</button>
         <button class="btn-acao btn-danger" onclick="limparHistorico()">Limpar Histórico</button>
     </div>
 
-    <!-- ÁREA DE IMPRESSÃO / PDF COM O DESIGN EXATO DA IMAGEM -->
+    <!-- ÁREA DE IMPRESSÃO / PDF -->
     <div id="print-area">
         <div style="border: 2px solid #1a5276; border-radius: 6px; padding: 10px; font-family: Arial, sans-serif;">
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
@@ -175,7 +181,6 @@
                     <td style="text-align: center; vertical-align: middle;">
                         <h2 style="margin: 0; color: #1a5276; font-size: 20px;">Berçário 2026/2027</h2>
                         <div style="font-size: 11px; color: #555; margin-top: 2px;">Registo semanal de entradas e saídas.</div>
-                        <div style="font-size: 11px; color: #333; margin-top: 4px;">Semana de _____ / _____ / ________ a _____ / _____ / ________</div>
                     </td>
                 </tr>
             </table>
@@ -203,9 +208,7 @@
                         <th style="border: 1px solid #1a5276; padding: 3px;">SAÍDA</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabelaPdf">
-                    <!-- Preenchido via JavaScript -->
-                </tbody>
+                <tbody id="corpoTabelaPdf"></tbody>
             </table>
 
             <div style="margin-top: 15px; border: 1px solid #bbb; padding: 8px; border-radius: 4px; font-size: 11px; min-height: 45px;">
@@ -220,10 +223,136 @@
     </div>
 
     <script>
-        let criancas = JSON.parse(localStorage.getItem('bercario_lista_criancas') || JSON.stringify(["Kiko", "Inês", "Íris", "Lara", "Leonardo", "Maria", "Martim", "Rodrigo", "Tomás", "Vasco"]));
         const nomesDias = ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira"];
+        let appData = {
+            criancas: ["Niko", "Inês", "Íris", "Lara", "Leonardo", "Maria", "Martín", "Rodrigo", "Tomás", "Vasco"],
+            dadosSemana: {}
+        };
 
-        function inicializarApp() {
+        function getGitHubConfig() {
+            return {
+                token: (localStorage.getItem('gh_token') || '').trim(),
+                gistId: (localStorage.getItem('gh_gist_id') || '').trim()
+            };
+        }
+
+        function configurarGitHub() {
+            let cfg = getGitHubConfig();
+            let t = prompt("Insira o seu Personal Access Token do GitHub (com permissão 'gist'):", cfg.token);
+            if (t === null) return;
+            let g = prompt("Insira o ID do GitHub Gist (ou deixe em branco para criar um novo automaticamente):", cfg.gistId);
+            if (g === null) return;
+
+            localStorage.setItem('gh_token', t.trim());
+            localStorage.setItem('gh_gist_id', g.trim());
+            alert("Configuração guardada! A testar ligação...");
+            carregarDaCloud();
+        }
+
+        async function carregarDaCloud() {
+            let cfg = getGitHubConfig();
+            if (!cfg.token) {
+                document.getElementById("loading-overlay").style.display = "none";
+                if(confirm("Token do GitHub não configurado. Deseja configurar agora para sincronizar os dados?")) {
+                    configurarGitHub();
+                } else {
+                    inicializarAppLocal();
+                }
+                return;
+            }
+
+            document.getElementById("loading-text").innerText = "A descarregar dados do GitHub...";
+            document.getElementById("loading-overlay").style.display = "flex";
+
+            try {
+                // Se não tiver Gist ID, cria um novo automaticamente
+                if (!cfg.gistId) {
+                    let respCriar = await fetch('https://api.github.com/gists', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${cfg.token}`,
+                            'Accept': 'application/vnd.github+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            description: "Dados Berçario Montelongo",
+                            public: false,
+                            files: { "bercario_data.json": { content: JSON.stringify(appData) } }
+                        })
+                    });
+                    
+                    if (!respCriar.ok) throw new Error("Falha ao criar Gist. Verifique se o token é válido e tem permissão 'gist'.");
+                    let dataCriar = await respCriar.json();
+                    cfg.gistId = dataCriar.id;
+                    localStorage.setItem('gh_gist_id', cfg.gistId);
+                    alert(`Gist criado com sucesso! ID: ${cfg.gistId}`);
+                }
+
+                // Ler o Gist existente
+                let respGet = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${cfg.token}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+
+                if (!respGet.ok) throw new Error("Não foi possível ler o Gist. Verifique se o ID do Gist está correto.");
+                let gistData = await respGet.json();
+                
+                if (gistData.files && gistData.files["bercario_data.json"]) {
+                    let conteudo = JSON.parse(gistData.files["bercario_data.json"].content);
+                    if (conteudo.criancas) appData.criancas = conteudo.criancas;
+                    if (conteudo.dadosSemana) appData.dadosSemana = conteudo.dadosSemana;
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao ligar ao GitHub: " + err.message);
+            }
+
+            document.getElementById("loading-overlay").style.display = "none";
+            inicializarAppLocal();
+        }
+
+        async function guardarNaCloud() {
+            let cfg = getGitHubConfig();
+            if (!cfg.token || !cfg.gistId) {
+                alert("Token do GitHub ou ID do Gist em falta! Configure nas definições da aba Histórico.");
+                return;
+            }
+
+            document.getElementById("loading-text").innerText = "A guardar no GitHub...";
+            document.getElementById("loading-overlay").style.display = "flex";
+
+            try {
+                let resp = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${cfg.token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            "bercario_data.json": {
+                                content: JSON.stringify(appData, null, 2)
+                            }
+                        }
+                    })
+                });
+
+                if (!resp.ok) {
+                    let errData = await resp.json();
+                    throw new Error(errData.message || "Erro HTTP " + resp.status);
+                }
+            } catch (err) {
+                console.error("Erro ao guardar na cloud:", err);
+                alert("Erro ao gravar no GitHub: " + err.message);
+            } finally {
+                document.getElementById("loading-overlay").style.display = "none";
+            }
+        }
+
+        function inicializarAppLocal() {
             atualizarComboboxCriancas();
             carregarRegistoCrianca();
             carregarGestaoCriancas();
@@ -232,14 +361,14 @@
         function atualizarComboboxCriancas(selecionarIndex = 0) {
             const select = document.getElementById("criancaSelect");
             select.innerHTML = "";
-            criancas.forEach((nome, i) => {
+            appData.criancas.forEach((nome, i) => {
                 let opt = document.createElement("option");
                 opt.value = i;
                 opt.text = nome;
                 select.appendChild(opt);
             });
-            if (criancas.length > 0) {
-                select.selectedIndex = Math.min(selecionarIndex, criancas.length - 1);
+            if (appData.criancas.length > 0) {
+                select.selectedIndex = Math.min(selecionarIndex, appData.criancas.length - 1);
             }
         }
 
@@ -247,36 +376,18 @@
             let val = input.value.trim();
             if (!val) return;
             val = val.replace(/\D/g, '');
-
             if (val.length === 3) val = "0" + val;
-
             if (val.length === 4) {
                 let horas = parseInt(val.substring(0, 2), 10);
                 let minutos = parseInt(val.substring(2, 4), 10);
                 if (horas > 23 || minutos > 59) {
-                    alert("Hora inválida! Insira um valor correto (ex: 0830 ou 1715).");
+                    alert("Hora inválida!");
                     input.value = "";
                     return;
                 }
                 input.value = val.substring(0, 2) + ":" + val.substring(2, 4);
                 return;
             }
-
-            if (input.value.includes(":")) {
-                let partes = input.value.split(":");
-                if (partes.length === 2) {
-                    let h = parseInt(partes[0], 10);
-                    let m = parseInt(partes[1], 10);
-                    if (isNaN(h) || isNaN(m) || h > 23 || m > 59) {
-                        alert("Hora inválida! Verifique os valores (máximo 23:59).");
-                        input.value = "";
-                        return;
-                    }
-                    input.value = (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
-                    return;
-                }
-            }
-
             if (val.length > 0 && val.length < 4) {
                 alert("Use 4 dígitos (ex: 0930).");
                 input.value = "";
@@ -287,19 +398,18 @@
             let diaIndex = document.getElementById("diaSelect").value;
             let criancaIndex = document.getElementById("criancaSelect").value;
             
-            if (criancas.length === 0 || criancaIndex === "") return;
+            if (appData.criancas.length === 0 || criancaIndex === "") return;
 
-            document.getElementById("tituloCriancaSelecionada").innerText = criancas[criancaIndex];
+            document.getElementById("tituloCriancaSelecionada").innerText = appData.criancas[criancaIndex];
 
-            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
-            let dadosDia = dadosGerais[diaIndex] || { entradas: {}, saidas: {}, obs: "" };
+            let dadosDia = appData.dadosSemana[diaIndex] || { entradas: {}, saidas: {}, obs: "" };
 
             document.getElementById("inputEntrada").value = dadosDia.entradas[criancaIndex] || "";
             document.getElementById("inputSaida").value = dadosDia.saidas[criancaIndex] || "";
             document.getElementById("obs").value = dadosDia.obs || "";
         }
 
-        function guardarRegistoAtual() {
+        async function guardarRegistoAtual() {
             let eInput = document.getElementById("inputEntrada");
             let sInput = document.getElementById("inputSaida");
             if(eInput.value) formatarEValidarHora(eInput);
@@ -308,49 +418,48 @@
             let diaIndex = document.getElementById("diaSelect").value;
             let criancaIndex = document.getElementById("criancaSelect").value;
             
-            if (criancas.length === 0) return;
+            if (appData.criancas.length === 0) return;
 
-            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
-            if (!dadosGerais[diaIndex]) {
-                dadosGerais[diaIndex] = { entradas: {}, saidas: {}, obs: "" };
+            if (!appData.dadosSemana[diaIndex]) {
+                appData.dadosSemana[diaIndex] = { entradas: {}, saidas: {}, obs: "" };
             }
 
-            dadosGerais[diaIndex].entradas[criancaIndex] = eInput.value;
-            dadosGerais[diaIndex].saidas[criancaIndex] = sInput.value;
-            dadosGerais[diaIndex].obs = document.getElementById("obs").value;
+            appData.dadosSemana[diaIndex].entradas[criancaIndex] = eInput.value;
+            appData.dadosSemana[diaIndex].saidas[criancaIndex] = sInput.value;
+            appData.dadosSemana[diaIndex].obs = document.getElementById("obs").value;
 
             let nomeDia = nomesDias[diaIndex];
             let resumoDia = `<b>${nomeDia}</b><br>`;
             let temRegisto = false;
 
-            for (let i = 0; i < criancas.length; i++) {
-                let ent = dadosGerais[diaIndex].entradas[i];
-                let sai = dadosGerais[diaIndex].saidas[i];
+            for (let i = 0; i < appData.criancas.length; i++) {
+                let ent = appData.dadosSemana[diaIndex].entradas[i];
+                let sai = appData.dadosSemana[diaIndex].saidas[i];
                 if (ent || sai) {
-                    resumoDia += `- ${criancas[i]}: (Ent: ${ent || '--'} | Saí: ${sai || '--'})<br>`;
+                    resumoDia += `- ${appData.criancas[i]}: (Ent: ${ent || '--'} | Saí: ${sai || '--'})<br>`;
                     temRegisto = true;
                 }
             }
-            if (dadosGerais[diaIndex].obs) {
-                resumoDia += `Obs: ${dadosGerais[diaIndex].obs}<br>`;
+            if (appData.dadosSemana[diaIndex].obs) {
+                resumoDia += `Obs: ${appData.dadosSemana[diaIndex].obs}<br>`;
             }
 
             if (temRegisto) {
-                dadosGerais[diaIndex].resumo = resumoDia;
-                dadosGerais[diaIndex].dataRegisto = new Date().toLocaleDateString();
+                appData.dadosSemana[diaIndex].resumo = resumoDia;
+                appData.dadosSemana[diaIndex].dataRegisto = new Date().toLocaleDateString();
             } else {
-                delete dadosGerais[diaIndex];
+                delete appData.dadosSemana[diaIndex];
             }
 
-            localStorage.setItem('bercario_dados_semana', JSON.stringify(dadosGerais));
-            alert("Registo guardado com sucesso!");
+            await guardarNaCloud();
+            alert("Registo guardado e sincronizado com o GitHub!");
         }
 
         /* Gestão de Crianças */
         function carregarGestaoCriancas() {
             let container = document.getElementById("listaGestaoCriancas");
             container.innerHTML = "";
-            criancas.forEach((nome, i) => {
+            appData.criancas.forEach((nome, i) => {
                 let div = document.createElement("div");
                 div.className = "child-item";
                 div.innerHTML = `
@@ -364,68 +473,63 @@
             });
         }
 
-        function adicionarCrianca() {
+        async function adicionarCrianca() {
             let input = document.getElementById("novoNomeCrianca");
             let nome = input.value.trim();
-            if (!nome) {
-                alert("Insira um nome válido.");
-                return;
-            }
-            criancas.push(nome);
-            localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+            if (!nome) return alert("Insira um nome válido.");
+            appData.criancas.push(nome);
             input.value = "";
+            await guardarNaCloud();
             atualizarComboboxCriancas();
             carregarGestaoCriancas();
-            alert("Criança adicionada com sucesso!");
+            alert("Criança adicionada e sincronizada!");
         }
 
-        function editarCrianca(index) {
-            let novoNome = prompt("Editar nome da criança:", criancas[index]);
+        async function editarCrianca(index) {
+            let novoNome = prompt("Editar nome da criança:", appData.criancas[index]);
             if (novoNome !== null && novoNome.trim() !== "") {
-                criancas[index] = novoNome.trim();
-                localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+                appData.criancas[index] = novoNome.trim();
+                await guardarNaCloud();
                 atualizarComboboxCriancas();
                 carregarGestaoCriancas();
                 carregarRegistoCrianca();
+                alert("Nome alterado e sincronizado!");
             }
         }
 
-        function apagarCrianca(index) {
-            if (confirm(`Deseja mesmo apagar ${criancas[index]}?`)) {
-                criancas.splice(index, 1);
-                localStorage.setItem('bercario_lista_criancas', JSON.stringify(criancas));
+        async function apagarCrianca(index) {
+            if (confirm(`Deseja mesmo apagar ${appData.criancas[index]}?`)) {
+                appData.criancas.splice(index, 1);
+                await guardarNaCloud();
                 atualizarComboboxCriancas();
                 carregarGestaoCriancas();
                 carregarRegistoCrianca();
+                alert("Criança apagada e sincronizada!");
             }
         }
 
-        /* Histórico, Visualização PDF e Email */
         function atualizarHistoricoGeral() {
-            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
             let historicoContainer = document.getElementById("lista-historico");
             historicoContainer.innerHTML = "";
-            
             let hHtml = "";
-            for (let d in dadosGerais) {
-                if (dadosGerais[d] && dadosGerais[d].resumo) {
-                    hHtml += `<div class="history-item">${dadosGerais[d].resumo} <small style="color:#7f8c8d"><br>Guardado a: ${dadosGerais[d].dataRegisto || ''}</small></div>`;
+            for (let d in appData.dadosSemana) {
+                if (appData.dadosSemana[d] && appData.dadosSemana[d].resumo) {
+                    hHtml += `<div class="history-item">${appData.dadosSemana[d].resumo} <small style="color:#7f8c8d"><br>Guardado a: ${appData.dadosSemana[d].dataRegisto || ''}</small></div>`;
                 }
             }
             historicoContainer.innerHTML = hHtml || "Sem histórico guardado.";
         }
 
         function gerarPDFTabela() {
-            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
             let tbody = document.getElementById("corpoTabelaPdf");
             tbody.innerHTML = "";
 
-            criancas.forEach((nome, cIdx) => {
+            appData.criancas.forEach((nome, cIdx) => {
                 let tr = document.createElement("tr");
                 let htmlRow = `<td style="border: 1px solid #1a5276; padding: 6px; font-weight: bold; background: #fafbfc; text-align: left; padding-left: 8px;">${nome}</td>`;
                 
                 for (let dIdx = 0; dIdx < 5; dIdx++) {
-                    let diaObj = dadosGerais[dIdx];
+                    let diaObj = appData.dadosSemana[dIdx];
                     let ent = (diaObj && diaObj.entradas && diaObj.entradas[cIdx]) ? diaObj.entradas[cIdx] : "";
                     let sai = (diaObj && diaObj.saidas && diaObj.saidas[cIdx]) ? diaObj.saidas[cIdx] : "";
                     
@@ -436,42 +540,28 @@
                 tbody.appendChild(tr);
             });
 
-            // Compilar observações para o rodapé do PDF
             let obsTexto = "";
             nomesDias.forEach((nomeDia, dIdx) => {
-                if (dadosGerais[dIdx] && dadosGerais[dIdx].obs) {
-                    obsTexto += `<b>${nomeDia}:</b> ${dadosGerais[dIdx]} | `;
-                    obsTexto += `<b>${nomeDia}:</b> ${dadosGerais[dIdx].obs} &nbsp;&nbsp; `;
+                if (appData.dadosSemana[dIdx] && appData.dadosSemana[dIdx].obs) {
+                    obsTexto += `<b>${nomeDia}:</b> ${appData.dadosSemana[dIdx].obs} &nbsp;&nbsp; `;
                 }
             });
-            document.getElementById("obsPdfTexto").innerHTML = obsTexto || "Nenhuma observação registada para esta semana.";
-
-            // Disparar impressão / Gravar PDF do sistema
+            document.getElementById("obsPdfTexto").innerHTML = obsTexto || "Nenhuma observação registada.";
             window.print();
         }
 
         function enviarEmail() {
-            let dadosGerais = JSON.parse(localStorage.getItem('bercario_dados_semana') || '{}');
             let corpoEmail = "CENTRO INFANTIL MONTELONGO - BERÇÁRIO 2026/2027\n\n";
-            corpoEmail += "CRIANÇA   | SEG(Ent/Sai) | TER(Ent/Sai) | QUA(Ent/Sai) | QUI(Ent/Sai) | SEX(Ent/Sai)\n";
-            corpoEmail += "-----------------------------------------------------------------------------------\n";
-
-            criancas.forEach((nome, cIdx) => {
+            appData.criancas.pop; // dummy
+            appData.criancas.forEach((nome, cIdx) => {
                 let linha = nome.padEnd(10, ' ');
                 for (let dIdx = 0; dIdx < 5; dIdx++) {
-                    let diaObj = dadosGerais[dIdx];
+                    let diaObj = appData.dadosSemana[dIdx];
                     let ent = (diaObj && diaObj.entradas && diaObj.entradas[cIdx]) ? diaObj.entradas[cIdx] : "--:--";
                     let sai = (diaObj && diaObj.saidas && diaObj.saidas[cIdx]) ? diaObj.saidas[cIdx] : "--:--";
                     linha += ` | ${ent}/${sai}`;
                 }
                 corpoEmail += linha + "\n";
-            });
-
-            corpoEmail += "-----------------------------------------------------------------------------------\n\nOBSERVAÇÕES:\n";
-            nomesDias.forEach((nomeDia, dIdx) => {
-                if (dadosGerais[dIdx] && dadosGerais[dIdx].obs) {
-                    corpoEmail += `- ${nomeDia}: ${dadosGerais[dIdx].obs}\n`;
-                }
             });
 
             let assunto = encodeURIComponent("Mapa Semanal de Entradas e Saídas - Berçário Montelongo");
@@ -489,24 +579,21 @@
             botoes[1].classList.toggle("active", tab === 'criancas');
             botoes[2].classList.toggle("active", tab === 'historico');
             
-            if(tab === 'historico') {
-                atualizarHistoricoGeral();
-            }
-            if(tab === 'criancas') {
-                carregarGestaoCriancas();
-            }
+            if(tab === 'historico') atualizarHistoricoGeral();
+            if(tab === 'criancas') carregarGestaoCriancas();
         }
 
-        function limparHistorico() {
-            if(confirm("Deseja limpar todos os registos guardados?")) {
-                localStorage.removeItem('bercario_dados_semana');
+        async function limparHistorico() {
+            if(confirm("Deseja limpar todos os registos?")) {
+                appData.dadosSemana = {};
+                await guardarNaCloud();
                 atualizarHistoricoGeral();
                 carregarRegistoCrianca();
                 alert("Histórico limpo.");
             }
         }
 
-        window.onload = inicializarApp;
+        window.onload = carregarDaCloud;
     </script>
 </body>
 </html>
